@@ -40,7 +40,7 @@ Jenkins is an automation server which is free to use (open source) where the CI 
 
 ## Setting up Jenkins
 1. First we need to log into Jenkins using the username and password provided to us by Shahrukh.
-2. Next we want to select new item from the dashbaord on the left to create a new item
+2. Next we want to select new item from the dashboard on the left to create a new item
 3. We want to check that we are in the right time zone first
 4. We name this item billy-checking-zone
 5. Then select ```freestyle project``` and select ok
@@ -134,3 +134,100 @@ We can automate the checking of the OS by doing the following
 35. Then click save and build now
 36. This will take slightly linger than before but you should see as normal  in build history that it was successful
 37. In AWS this will have created multiple instances
+
+## How to create a Webhook Trigger
+1. Go to Git Hub
+2. Go to your repo that contains your app folder
+3. Go to settings and select webhooks from the dashboard
+4. Add a webhook and copy the URL from Jenkins
+5. Then go to Jenkins and go to billy-CI and go to configure
+6. Go to job builds and select the git option
+7. Then follow either of the steps below to make a change
+
+## How to use a Webhook Trigger on Git Hub
+1. Log into Jenkins
+2. Go to billy-CI job
+3. Make a change in your app code on Git Hub, just use a comment
+4. Commit the change
+5. A new job in build history will be triggered
+
+## Testing it on Local- VS
+1. Use Git Pull in VS
+2. Make a change in your code, again make another comment
+3. Git add, git commit and git push
+4. A new job in build history will be triggered
+
+## Creating a dev branch and merging to main branch
+1. Create a new job in Jenkins called billy-ci-merge
+2. We can use a template from the billy-ci that we made previosuly to fill out the page with what we have done before
+3. In source code management change branches to build to dev as below
+
+![Alt text](../Source%20code%20management.png)
+
+7. Then click save
+8. In VS code use the command ```git branch dev``` to create a dev branch
+9. Then use ```git chechout dev``` to go into that branch
+10. Make a change to your README and then use the following commands
+11. ```Git add .```
+12. ```git commit -m "changes made"```
+13. ```git push origin dev```
+14. This how now pushed the changes to the dev branch onlu.
+15. In Git Hub go to your repo and select your branch from the top left of the below
+
+![Alt text](../branch.png)
+
+16. Select view all branches and then select the dev branch
+17. You should be able to see the changes you made and if you check Jenkins another job has been created
+18. If the tests have passed on Jenknis then we now need to merge the branches
+19. Use the command ```git checkout main``` to go back to main branch
+20. Then use ```git merge dev``` to merge them
+21. Now use ```git push origin main``` to push the changes to main branch which will also trigger another job build
+
+## How to automate the merging process
+1. Follow the steps above up until step 7
+2. Do not save just yet as we need to add more steps
+3. Add the below in additional behaviours to state where to merge the branch
+
+![Alt text](../additional%20behaviours.png)
+4. Scroll to the bottom and add a post-build action
+5. Select git publisher and tick the following boxes
+
+![Alt text](../post%20build.png)
+
+6. The post build actions states that the changes will nly be pushed to the main branch if the tests pass
+7. Click save
+8. Go back into your dev branc using ```git chechout dev``` and make a change to your README
+9. Then use the below again
+10. ```Git add .```
+11. ```git commit -m "changes made"```
+12. ```git push origin dev```
+13. This will have created a new job build in jenkins and when is passess the checks it will merge with the main branch
+14. You can check the console output to make sure everything has worked and you can also check the changes have also happened on your repo in Git Hub when you are in the main branch
+15. Go to your billy-CI job and scroll to the bottom
+16. In post-build actions add build other projects
+17. Type in the job you would like to build, for example billy-ci-merge
+18. Then save
+
+## Pushing the code to production
+1. Create an EC2 instance from your app AMI and make sure you allow the following ports 
+* SSH on Jenkins port ```31.205.76.5/32```
+* HTTP port 80
+* SSH on my IP
+* Port 3000
+* Port 8080
+2. Create a new job and name it billy-sparta-app
+3. Configure it as below
+
+![Alt text](../part%201.png)
+![Alt text](../part%202.png)
+![Alt text](../part%203.png)
+![Alt text](../part%204.png)
+![Alt text](../part%205.png)
+
+4. The first few parts we have covered already however in build environment we added an SSH agent
+5. The credentials were made for us under the name tech221-aws-keys
+6. Then in build we added an execute shell and added the code in the image
+7. This is basically copying over the app fodler from Git Hub oevr to our instance
+8. Then it runs the app
+9. All we need to do now is to get the public IP address from our instance and run it in a browser but add ```:3000``` to the end as we do not have a reverse proxy set up
+10. The sparta app should then load
