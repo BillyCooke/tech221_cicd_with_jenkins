@@ -101,10 +101,10 @@ We can automate the checking of the OS by doing the following
 14. Create a new item called billy-CI and select freestyle project as normal
 15. Create a description and follow the normal steps for discard old builds
 16. Now select GitHub Project underneath discard old builds
-17. You will be promoted to add your project url so go back to GitHub and go into your repo that contains the app folder
+17. You will be prompted to add your project url so go back to GitHub and go into your repo that contains the app folder
 18. Select the green button code and copy the HTTPS url
-19. Paste this into Jenknis
-20. Then in office 365 connector select ```restrict where this project can be run``` and in label expression search for sparta-ubuntu-node which was alrrady made for us
+19. Paste this into Jenkins
+20. Then in office 365 connector select ```restrict where this project can be run``` and in label expression search for sparta-ubuntu-node which was already made for us
 21. Next select Git in source code management
 22. We now need to add the SSH url in the repository url section in jenkins
 
@@ -231,3 +231,57 @@ We can automate the checking of the OS by doing the following
 8. Then it runs the app
 9. All we need to do now is to get the public IP address from our instance and run it in a browser but add ```:3000``` to the end as we do not have a reverse proxy set up
 10. The sparta app should then load
+
+## Building a Jenkins Server on AWS
+1. First launch a new EC2 instance on AWS and call it billy-master as this will be our master node
+2. We need to allow ports 80, 3000, 8080, ssh on my IP, ssh on Jenkins ID which you will get later on and port 443 on HTTPS
+3. We used a Git Bash terminal to ssh into the instance
+4. Here we need to install Jenkins and Java using the following
+```
+sudo apt-get update
+sudo apt-get install default-jdk -y
+
+
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+sudo apt-get update
+sudo apt-get install jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+ 
+
+sudo ufw allow OpenSSH
+sudo ufw enable
+```
+4. Then use the public IP from your instance and add ```:8080``` to the end to load up jenkins
+5. Create an account on Jenkins and use the preset plugins
+6. You will be asked for a password for this address ```/var/lib/jenkins/secrets/initialAdminPassword``` so you need to go into your Git BAsh and use ```cat /var/lib/jenkins/secrets/initialAdminPassword``` to reveal it
+7. Then use ```sudo su ssh -T git@github.com```
+8. Then once you are logged in go into manage Jenkins from the dashbaord on the left and select manage plugins
+9. Go to available plugins and from here we need to install git plugin, office 365 connector, NodeJs plugin and SSH agent
+10. Now go back to manage jenkins and go into global tool configuration
+11. Scroll to the bottom and add a NodeJS
+11. Name is billy-tech221-node and select version 16.0.0
+12. Under global npm packages to install write ```sudo npm install pm2 -g``` then save
+13. Now create a new item and follow the steps we made previosuly for billy-ci
+14. In build environment we need to select provide node and npm bin and select the one we just made - billy-tech221-node
+15. Next select SSH agent and click add
+16. Open a Git Bash terminal and cd into .ssh
+17. Run the command ```cat tech221.pem``` to reveal your private key and paste it onto jenkins
+18. Then add the usual ```cd app```, ```npm install``` and ```npm test``` into an execute shell in build steps
+19. Next made a new job and use the same steps for billy-ci-merge but use the node we made in build environenment
+20. Then make a new job and use the same steps as we used for billy-sparta-app
+21. Use the key we made in SSH agent
+22. Go to AWS and run an EC2 instance that runs the sparta app
+23. In build steps create an execute shell and paste this in but change the IP to the public IP from the instance we just made
+```
+scp -v -r -o StrictHostKeyChecking=no app/ ubuntu@52.19.58.8:/home/ubuntu/
+ssh -A -o StrictHostKeyChecking=no ubuntu@52.19.58.8 <<EOF
+#sudo apt install clear#
+cd app
+#sudo npm install pm2 -g
+# pm2 kill
+nohup node app.js > /dev/null 2>&1 &
+```
+24. Now use the public IP rfom your app instance and run it in a browser with port ```:3000``` at the end and it will laod the sparta app
